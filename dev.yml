@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+    video_service:
+        container_name: iqsklad_video_service
+        build:
+            context: ./
+            dockerfile: Dockerfile
+        volumes:
+        - ./videos/:/videos/
+
+        restart: always
+        network_mode: "host"
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "1m"
+                max-file: "3"

@@ -1,0 +1,118 @@
+<html>
+  <head>
+    <title>play-from-disk-renegotation</title>
+  </head>
+
+  <body>
+    <div>
+      <label for="balloons">Video number:</label>
+      <input id="userId" type="text" name="video id" step="1s" min="0" max="10" required>
+    </div>
+    <button onclick="window.InitSession()"> Init Session </button><br />
+    <button onclick="window.addVideo()"> Add Video </button><br />
+    <button onclick="window.removeVideo()"> Remove Video </button><br />
+
+
+    <h3> Video </h3>
+    <div id="remoteVideos"></div> <br />
+
+    <h3> Logs </h3>
+    <div id="logs"></div>
+  </body>
+
+
+  <script>
+    let activeVideos = 0
+    let input = document.getElementById('userId');
+    
+    let pc = new RTCPeerConnection({
+      iceServers: [
+        {
+          urls: 'stun:stun.l.google.com:19302'
+        }
+      ]
+    })
+    
+    pc.ontrack = function (event) {
+      var el = document.createElement(event.track.kind)
+      el.srcObject = event.streams[0]
+      el.autoplay = true
+      el.controls = true
+
+      event.track.onmute = function(event) {
+        el.parentNode.removeChild(el);
+      }
+
+      document.getElementById('remoteVideos').appendChild(el)
+    }
+    
+    let doSignaling = method => {
+      console.log(input)
+      pc.createOffer()
+        .then(offer => {
+          pc.setLocalDescription(offer)
+          //console.log(JSON.stringify(offer))
+          setTimeout(20000)
+          console.log(offer)
+          //console.log(JSON.stringify(offer))
+          
+          return fetch(`http://95.85.87.178:4200/stream/${method}/?id=${input.value}&audio=get`, {
+
+            method: 'post',
+            headers: {
+              'Accept': 'application/json, text/plain, */*',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(offer)
+          })
+        })
+        .then(res => res.json())
+        .then(res => pc.setRemoteDescription(res))
+        .catch(alert)
+    }
+
+    // Create a noop DataChannel. By default PeerConnections do not connect
+    // if they have no media tracks or DataChannelsßß
+    pc.createDataChannel('noop')
+
+    
+    window.InitSession = () => {
+      doSignaling('init')
+    };
+    window.addVideo = () => {
+      // console.log("signaling state", pc.signalingState)
+      // console.log("pc.getSenders name", pc.getSenders.name)
+      // console.log("pc.getSenders length", pc.getSenders.length)
+      // console.log("pc.iceConnectionState ", pc.iceConnectionState)console.log(input)
+      //console.log("get transceivers: ",pc.getTransceivers().length )
+      // console.log("pc.remoteDescription ",pc.remoteDescription)
+      
+      if (pc.getTransceivers().length <= activeVideos) {
+        try{
+          console.log("length tranc", pc.getTransceivers().length)
+          tranciever = pc.addTransceiver('video', {
+                                    'direction': 'sendrecv'
+                                  })
+        } catch (e){
+          alert(e)
+        }
+        
+
+        console.log("tranciever -",tranciever)
+        
+        activeVideos++
+       
+      }
+
+      doSignaling('start')
+      setTimeout(2000)
+
+      console.log("select timeout")
+    };
+
+    window.removeVideo = () => {
+      
+      doSignaling('close')
+    };
+  </script>
+</html>

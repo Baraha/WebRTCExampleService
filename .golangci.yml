@@ -1,0 +1,23 @@
+linters:
+  disable:
+    - gosimple
+    - deadcode
+    - unused
+    - gocritic
+    - structcheck
+
+  enable:
+   #- typecheck
+   - nilnil
+   #- structcheck
+   - govet
+   - gosec
+   
+
+linters-settings:
+  gocritic:
+    enabled-checks:
+      - ruleguard
+    settings:
+      ruleguard:
+        rules: "rules_lint.go"

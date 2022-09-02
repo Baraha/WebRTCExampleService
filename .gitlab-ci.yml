@@ -1,0 +1,31 @@
+stages:
+  - test
+  - run 
+  
+variables:
+  docker_version: "19.03.9"
+
+image: docker:$docker_version
+
+test-job:
+  only:
+    - test
+
+  stage: test
+  script:
+    
+    - echo "testing..."
+    - cd tests && go test
+    - echo "tests complete."
+
+
+run-job:
+  only:
+    - main
+
+  stage: run
+  script:
+    - echo "run the code..."
+    - docker-compose -f dev.yml up -d --build 
+    - echo "Compile complete."
+
