@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 	"video_service/internal/controller/video_service/video_logic"
-	"video_service/pkg/utils"
 
 	"github.com/fasthttp/router"
 	"github.com/pion/randutil"
@@ -157,7 +156,6 @@ func (service *restClient) START_STREAM(ctx *fasthttp.RequestCtx) {
 	doSignaling(ctx)
 }
 func (service *restClient) CLOSE_STREAM(ctx *fasthttp.RequestCtx) {
-
 	user_id := string(string(ctx.QueryArgs().Peek("id")))
 	if user_id == "" {
 		ctx.Response.Header.Set("Content-Type", "application/json")
@@ -183,9 +181,9 @@ func (service *restClient) CLOSE_STREAM(ctx *fasthttp.RequestCtx) {
 			panic(err)
 		}
 	}
-	doSignaling(ctx)
-	utils.CatchErr(Peer_pool[user_id].Close())
+	Peer_pool[user_id].Close()
 
+	doSignaling(ctx)
 }
 
 func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, user_id string) {
@@ -220,4 +218,5 @@ func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, u
 			panic(h264Err)
 		}
 	}
+	Peer_pool[user_id] = nil
 }
