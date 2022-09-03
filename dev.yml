@@ -25,3 +25,12 @@ services:
             POSTGRES_PASSWORD: "pass"
         ports:
             - "5432:5432"
+
+    test_front:
+        container_name: test_frot
+        build:
+            context: ./clientstream
+            dockerfile: Dockerfile
+
+        ports:
+            - "3000:3000"
