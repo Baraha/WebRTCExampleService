@@ -35,6 +35,6 @@ func (service H264fileService) ReadPacket() ([]byte, time.Duration) {
 	return pkt.Data, config.H264FrameDuration
 }
 
-func (H264fileService) Close() {
-
+func (service H264fileService) Close() {
+	service.file.Close()
 }

@@ -1,4 +1,4 @@
-package hickvision
+package cameras
 
 import (
 	"time"
@@ -10,22 +10,22 @@ import (
 	"github.com/nareix/joy4/format/rtsp"
 )
 
-type hickVisionService struct {
+type camService struct {
 	session             *rtsp.Client
 	RtpKeepAliveTimeout time.Duration
 	codecs              []av.CodecData
 }
 
 // rtsp://admin:Windowsmac13@192.168.1.64:554/ISAPI/Streaming/Channels/0"
-func NewHickVisionService(uri string, keppAlive time.Duration) hickVisionService {
+func NewCamService(uri string, keppAlive time.Duration) camService {
 	session, err := rtsp.Dial(uri)
 	utils.CatchErr(err)
 	codecs, err := session.Streams()
 	utils.CatchErr(err)
-	return hickVisionService{session: session, RtpKeepAliveTimeout: keppAlive, codecs: codecs}
+	return camService{session: session, RtpKeepAliveTimeout: keppAlive, codecs: codecs}
 }
 
-func (service hickVisionService) ReadPacket() ([]byte, time.Duration) {
+func (service camService) ReadPacket() ([]byte, time.Duration) {
 	annexbNALUStartCode := func() []byte { return []byte{0x00, 0x00, 0x00, 0x01} }
 
 	pkt, err := service.session.ReadPacket()
@@ -48,6 +48,6 @@ func (service hickVisionService) ReadPacket() ([]byte, time.Duration) {
 	return pkt.Data, pkt.Time
 }
 
-func (service hickVisionService) Close() {
+func (service camService) Close() {
 	service.session.Close()
 }

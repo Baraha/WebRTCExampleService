@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 	"time"
+	"video_service/internal/adapters/cameras"
 	fileservice "video_service/internal/adapters/file_service"
-	"video_service/internal/adapters/hickvision"
 	"video_service/internal/app/config"
 	"video_service/internal/controller/database/db_contracts"
 	"video_service/internal/controller/database/dto_video_db"
@@ -33,7 +33,7 @@ func NewVideoService(db db_contracts.LogicVideoDb) videoService {
 func (service videoService) AddTrack(uri string, keep_alive time.Duration) videoService {
 	switch config.VideoService {
 	case config.STATE_PROD:
-		service.video_client = hickvision.NewHickVisionService(uri, keep_alive)
+		service.video_client = cameras.NewCamService(uri, keep_alive)
 	case config.STATE_DEV:
 		log.Printf("state dev")
 		service.video_client = fileservice.NewFileService()
