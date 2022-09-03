@@ -10,6 +10,7 @@ import (
 	"video_service/internal/controller/database/db_contracts"
 	"video_service/internal/controller/database/dto_video_db"
 	videocontracts "video_service/internal/controller/video_service/video_contracts"
+	"video_service/pkg/utils"
 
 	"github.com/google/uuid"
 )
@@ -18,6 +19,7 @@ type VideoLogicContract interface {
 	Read() ([]byte, time.Duration)
 	Close(id string)
 	AddTrack(uri string, keep_alive time.Duration) (videoService, string)
+	GetAllVideos() []dto_video_db.Video
 }
 
 type videoService struct {
@@ -54,4 +56,10 @@ func (service videoService) Read() ([]byte, time.Duration) {
 func (service videoService) Close(id string) {
 	service.db_client.Delete(context.TODO(), id)
 	service.video_client.Close()
+}
+
+func (service videoService) GetAllVideos() []dto_video_db.Video {
+	dto, err := service.db_client.FindAll(context.TODO())
+	utils.CatchErr(err)
+	return dto
 }

@@ -1,7 +1,6 @@
 package video
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -9,12 +8,14 @@ import (
 	"video_service/internal/controller/video_service/video_logic"
 
 	"github.com/fasthttp/router"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/pion/randutil"
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/valyala/fasthttp"
 )
 
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var Peer_pool map[string]*webrtc.PeerConnection
 
 type restClient struct {
@@ -27,9 +28,10 @@ func NewRestClient(v video_logic.VideoLogicContract) restClient {
 }
 
 func (service *restClient) Register(r *router.Router) {
-	r.POST("/stream/start/", service.START_STREAM)
-	r.POST("/stream/close/", service.CLOSE_STREAM)
-	r.POST("/stream/init/", service.INIT_PEER)
+	r.POST("/stream/start/", service.StartStream)
+	r.POST("/stream/close/", service.CloseStream)
+	r.POST("/stream/init/", service.InitPeer)
+	r.GET("/connections/", service.GetVideo)
 }
 
 func doSignaling(ctx *fasthttp.RequestCtx) {
@@ -70,7 +72,7 @@ func doSignaling(ctx *fasthttp.RequestCtx) {
 	ctx.Response.AppendBody(response)
 }
 
-func (service *restClient) INIT_PEER(ctx *fasthttp.RequestCtx) {
+func (service *restClient) InitPeer(ctx *fasthttp.RequestCtx) {
 	user_id := string(string(ctx.QueryArgs().Peek("id")))
 	if user_id == "" {
 		ctx.Response.Header.Set("Content-Type", "application/json")
@@ -108,7 +110,7 @@ func (service *restClient) INIT_PEER(ctx *fasthttp.RequestCtx) {
 	fmt.Println("PeerConnection has been created")
 }
 
-func (service *restClient) START_STREAM(ctx *fasthttp.RequestCtx) {
+func (service *restClient) StartStream(ctx *fasthttp.RequestCtx) {
 	log.Printf("start streaming")
 	user_id := string(string(ctx.QueryArgs().Peek("id")))
 	if user_id == "" {
@@ -160,7 +162,7 @@ func (service *restClient) START_STREAM(ctx *fasthttp.RequestCtx) {
 	go service.writeVideoToTrack(videoTrack, user_id)
 	doSignaling(ctx)
 }
-func (service *restClient) CLOSE_STREAM(ctx *fasthttp.RequestCtx) {
+func (service *restClient) CloseStream(ctx *fasthttp.RequestCtx) {
 
 	user_id := string(string(ctx.QueryArgs().Peek("id")))
 	if user_id == "" {
@@ -222,4 +224,11 @@ func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, u
 		}
 	}
 	new_service.Close(video_id)
+}
+
+func (service *restClient) GetVideo(ctx *fasthttp.RequestCtx) {
+	b, _ := json.Marshal(service.video_service.GetAllVideos())
+	ctx.Response.AppendBody(b)
+	ctx.Response.Header.Set("Content-Type", "application/json")
+	ctx.Response.SetStatusCode(200)
 }
