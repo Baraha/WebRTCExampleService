@@ -137,15 +137,16 @@ func (r db) MaxWatch(ctx context.Context) (dto_video_db.Video, error) {
 }
 
 func (r db) MinWatch(ctx context.Context) (dto_video_db.Video, error) {
-	var max_watch dto_video_db.Video
+	var min_watch dto_video_db.Video
 	q := `
 	SELECT id, uri, watch_count
 	FROM public.videos 
 	WHERE watch_count = (SELECT MIN(watch_count) FROM public.videos) 
 	`
-	_, err := r.client.Exec(ctx, q, &max_watch)
+	row := r.client.QueryRow(ctx, q)
+	err := row.Scan(&min_watch.ID, &min_watch.Uri, &min_watch.WatchCount)
 	r.logger.Debugf("max err %v", err)
-	return max_watch, err
+	return min_watch, err
 }
 
 func (r db) UpdateOne(ctx context.Context, video dto_video_db.Video) error {

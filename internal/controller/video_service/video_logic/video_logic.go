@@ -55,6 +55,7 @@ func (service videoService) AddTrack(uri string, keep_alive time.Duration) (vide
 				WatchCount: 1,
 			})
 		}
+
 	} else {
 		video_id = video.ID
 		video.WatchCount++

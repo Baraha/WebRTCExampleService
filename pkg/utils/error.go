@@ -7,7 +7,13 @@ import (
 func CatchErr(err error) {
 
 	if err != nil {
-		log.Fatal(err)
+		switch err.Error() {
+		case "no rows in result set":
+			return
+
+		default:
+			log.Fatal(err)
+		}
 	}
 
 }

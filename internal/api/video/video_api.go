@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 	"video_service/internal/controller/video_service/video_logic"
+	"video_service/pkg/utils"
 
 	"github.com/fasthttp/router"
 	jsoniter "github.com/json-iterator/go"
@@ -32,7 +33,8 @@ func (service *restClient) Register(r *router.Router) {
 	r.POST("/stream/close/", service.CloseStream)
 	r.POST("/stream/init/", service.InitPeer)
 	r.GET("/connections/", service.GetVideo)
-	r.GET("/stream/max", service.GetMaxView)
+	r.GET("/stream/max/", service.GetMaxView)
+	r.GET("/stream/min/", service.GetMintView)
 }
 
 func doSignaling(ctx *fasthttp.RequestCtx) {
@@ -46,27 +48,24 @@ func doSignaling(ctx *fasthttp.RequestCtx) {
 	var offer webrtc.SessionDescription
 
 	if err := json.Unmarshal(ctx.Request.Body(), &offer); err != nil {
-		panic(err)
+		utils.CatchErr(err)
 	}
 
 	if err := Peer_pool[user_id].SetRemoteDescription(offer); err != nil {
-		log.Printf("panic at err 1")
-		panic(err)
+		utils.CatchErr(err)
 	}
 
 	answer, err := Peer_pool[user_id].CreateAnswer(nil)
 	if err != nil {
-		log.Printf("panic at err 2")
-		panic(err)
+		utils.CatchErr(err)
+
 	} else if err = Peer_pool[user_id].SetLocalDescription(answer); err != nil {
-		log.Printf("panic at err 3")
-		panic(err)
+		utils.CatchErr(err)
 	}
 
 	response, errMarshal := json.Marshal(*Peer_pool[user_id].LocalDescription())
-	if err != nil {
-		log.Printf("panic at err 4")
-		panic(errMarshal)
+	if errMarshal != nil {
+		utils.CatchErr(errMarshal)
 	}
 	log.Printf("set resp")
 	ctx.Response.Header.Set("Content-Type", "application/json")
@@ -252,6 +251,13 @@ func (service *restClient) GetVideo(ctx *fasthttp.RequestCtx) {
 
 func (service *restClient) GetMaxView(ctx *fasthttp.RequestCtx) {
 	b, _ := json.Marshal(service.video_service.GetMaxWatched())
+	ctx.Response.AppendBody(b)
+	ctx.Response.Header.Set("Content-Type", "application/json")
+	ctx.Response.SetStatusCode(200)
+}
+
+func (service *restClient) GetMintView(ctx *fasthttp.RequestCtx) {
+	b, _ := json.Marshal(service.video_service.GetMinWatched())
 	ctx.Response.AppendBody(b)
 	ctx.Response.Header.Set("Content-Type", "application/json")
 	ctx.Response.SetStatusCode(200)
