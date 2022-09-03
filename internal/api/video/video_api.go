@@ -217,6 +217,9 @@ func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, u
 		// читаем фрейм
 		data, pkt_time := new_service.Read()
 		time.Sleep(pkt_time)
+		if data == nil {
+			break
+		}
 
 		if h264Err := t.WriteSample(media.Sample{Data: data, Duration: pkt_time}); h264Err != nil && h264Err != io.ErrClosedPipe {
 			log.Print("panic h264Err")
