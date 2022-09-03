@@ -8,6 +8,7 @@ import (
 	"video_service/internal/adapters/postgresql"
 	"video_service/internal/controller/database/dto_video_db"
 	"video_service/pkg/logging"
+	"video_service/pkg/utils"
 
 	"github.com/jackc/pgconn"
 )
@@ -106,6 +107,8 @@ func (r db) Delete(ctx context.Context, id string) error {
 	q := `
 	DELETE FROM public.videos WHERE id = $1
 	`
-	_, err := r.client.Exec(ctx, q)
+	_, err := r.client.Exec(ctx, q, id)
+	utils.CatchErr(err)
+	r.logger.Debugf("delete err %v", err)
 	return err
 }

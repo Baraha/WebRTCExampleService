@@ -27,14 +27,16 @@ func NewFileService() H264fileService {
 func (service H264fileService) ReadPacket() ([]byte, time.Duration) {
 	// pkt, h264Err := in.ReadPacket()
 	pkt, h264Err := service.h264Reader.NextNAL()
-	utils.CatchErr(h264Err)
 	if h264Err == io.EOF {
 		log.Printf("All video frames parsed and sent")
 		return nil, config.H264FrameDuration
 	}
+	utils.CatchErr(h264Err)
+
 	return pkt.Data, config.H264FrameDuration
 }
 
 func (service H264fileService) Close() {
+	log.Print("close file connect")
 	service.file.Close()
 }

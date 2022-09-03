@@ -47,20 +47,25 @@ func doSignaling(ctx *fasthttp.RequestCtx) {
 	}
 
 	if err := Peer_pool[user_id].SetRemoteDescription(offer); err != nil {
+		log.Printf("panic at err 1")
 		panic(err)
 	}
 
 	answer, err := Peer_pool[user_id].CreateAnswer(nil)
 	if err != nil {
+		log.Printf("panic at err 2")
 		panic(err)
 	} else if err = Peer_pool[user_id].SetLocalDescription(answer); err != nil {
+		log.Printf("panic at err 3")
 		panic(err)
 	}
 
 	response, errMarshal := json.Marshal(*Peer_pool[user_id].LocalDescription())
 	if err != nil {
+		log.Printf("panic at err 4")
 		panic(errMarshal)
 	}
+	log.Printf("set resp")
 	ctx.Response.Header.Set("Content-Type", "application/json")
 	ctx.Response.AppendBody(response)
 }
@@ -156,6 +161,7 @@ func (service *restClient) START_STREAM(ctx *fasthttp.RequestCtx) {
 	doSignaling(ctx)
 }
 func (service *restClient) CLOSE_STREAM(ctx *fasthttp.RequestCtx) {
+
 	user_id := string(string(ctx.QueryArgs().Peek("id")))
 	if user_id == "" {
 		ctx.Response.Header.Set("Content-Type", "application/json")
@@ -168,6 +174,7 @@ func (service *restClient) CLOSE_STREAM(ctx *fasthttp.RequestCtx) {
 		ctx.Response.AppendBody(b)
 		return
 	}
+	defer Peer_pool[user_id].Close()
 
 	if Peer_pool[user_id].ConnectionState().String() == "closed" {
 		ctx.Response.Header.Set("Content-Type", "application/json")
@@ -181,42 +188,38 @@ func (service *restClient) CLOSE_STREAM(ctx *fasthttp.RequestCtx) {
 			panic(err)
 		}
 	}
-	Peer_pool[user_id].Close()
+	log.Print("CLOSE STREAM")
 
 	doSignaling(ctx)
+	log.Print("return in close_stream")
 }
 
 func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, user_id string) {
-	defer service.video_service.Close()
 	var err error
 
 	if err != nil {
 		panic(err)
 	}
 
-	var previousTime time.Duration
-
 	// Производим подключение к камере -  на dev среде стоит обработка из файла
-	new_service := service.video_service.AddTrack(fmt.Sprintf("rtsp://admin:Windowsmac13@192.168.1.64:554/ISAPI/Streaming/Channels/%v", user_id), 10*time.Second)
+	new_service, video_id := service.video_service.AddTrack(fmt.Sprintf("rtsp://admin:Windowsmac13@192.168.1.64:554/ISAPI/Streaming/Channels/%v", user_id), 10*time.Second)
 
 	for {
 		// Проверяем что peer все еше присутствует
-		if _, exists := Peer_pool[user_id]; !exists {
-			break
-		} else {
+		if _, exists := Peer_pool[user_id]; exists {
 			if Peer_pool[user_id].ConnectionState().String() == "closed" {
+				Peer_pool[user_id] = nil
 				break
 			}
 		}
-		log.Print("scan files")
+		// читаем фрейм
 		data, pkt_time := new_service.Read()
-		bufferDuration := pkt_time - previousTime
-		previousTime = pkt_time
 		time.Sleep(pkt_time)
-		log.Printf("sending file %v", bufferDuration)
+
 		if h264Err := t.WriteSample(media.Sample{Data: data, Duration: pkt_time}); h264Err != nil && h264Err != io.ErrClosedPipe {
+			log.Print("panic h264Err")
 			panic(h264Err)
 		}
 	}
-	Peer_pool[user_id] = nil
+	new_service.Close(video_id)
 }

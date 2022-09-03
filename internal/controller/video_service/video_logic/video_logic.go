@@ -16,21 +16,20 @@ import (
 
 type VideoLogicContract interface {
 	Read() ([]byte, time.Duration)
-	Close()
-	AddTrack(uri string, keep_alive time.Duration) videoService
+	Close(id string)
+	AddTrack(uri string, keep_alive time.Duration) (videoService, string)
 }
 
 type videoService struct {
 	video_client videocontracts.VideoContract
 	db_client    db_contracts.LogicVideoDb
-	id           string
 }
 
 func NewVideoService(db db_contracts.LogicVideoDb) videoService {
 	return videoService{db_client: db}
 }
 
-func (service videoService) AddTrack(uri string, keep_alive time.Duration) videoService {
+func (service videoService) AddTrack(uri string, keep_alive time.Duration) (videoService, string) {
 	switch config.VideoService {
 	case config.STATE_PROD:
 		service.video_client = cameras.NewCamService(uri, keep_alive)
@@ -40,21 +39,19 @@ func (service videoService) AddTrack(uri string, keep_alive time.Duration) video
 		log.Printf("service is %v", service.video_client)
 	}
 	new_id := uuid.NewString()
-	service.id = new_id
 	service.db_client.Create(context.TODO(), &dto_video_db.Video{
 		Uri: uri,
 		ID:  new_id,
 	})
 
-	return service
+	return service, new_id
 }
 
 func (service videoService) Read() ([]byte, time.Duration) {
-	log.Printf("service video client %v", service.video_client)
 	return service.video_client.ReadPacket()
 }
 
-func (service videoService) Close() {
-	service.db_client.Delete(context.TODO(), service.id)
+func (service videoService) Close(id string) {
+	service.db_client.Delete(context.TODO(), id)
 	service.video_client.Close()
 }
