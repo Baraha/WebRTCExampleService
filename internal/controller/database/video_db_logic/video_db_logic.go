@@ -97,11 +97,7 @@ func (r db) FindOne(ctx context.Context, id string) (dto_video_db.Video, error) 
 	var ath dto_video_db.Video
 	row := r.client.QueryRow(ctx, q, id)
 	err := row.Scan(&ath.ID, &ath.Uri, &ath.WatchCount)
-	if err != nil {
-		return dto_video_db.Video{}, err
-	}
-
-	return ath, nil
+	return ath, err
 }
 
 func (r db) FindWithUri(ctx context.Context, uri string) (dto_video_db.Video, error) {
@@ -113,11 +109,7 @@ func (r db) FindWithUri(ctx context.Context, uri string) (dto_video_db.Video, er
 	var ath dto_video_db.Video
 	row := r.client.QueryRow(ctx, q, uri)
 	err := row.Scan(&ath.ID, &ath.Uri, &ath.WatchCount)
-	if err != nil {
-		return dto_video_db.Video{}, err
-	}
-
-	return ath, nil
+	return ath, err
 }
 
 func (r db) Delete(ctx context.Context, id string) error {
@@ -130,26 +122,30 @@ func (r db) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-func (r db) MaxWatch(ctx context.Context) int {
-	var max_watch int
+func (r db) MaxWatch(ctx context.Context) (dto_video_db.Video, error) {
+	var max_watch dto_video_db.Video
 	q := `
-	SELECT MAX(watch_count) FROM public.videos 
+	SELECT id, uri, watch_count
+	FROM public.videos 
+	WHERE watch_count = (SELECT MAX(watch_count) FROM public.videos)
 	`
-	_, err := r.client.Exec(ctx, q, &max_watch)
+	row := r.client.QueryRow(ctx, q)
+	err := row.Scan(&max_watch.ID, &max_watch.Uri, &max_watch.WatchCount)
 	r.logger.Debugf("max err %v", err)
-	utils.CatchErr(err)
-	return max_watch
+
+	return max_watch, err
 }
 
-func (r db) MinWatch(ctx context.Context) int {
-	var max_watch int
+func (r db) MinWatch(ctx context.Context) (dto_video_db.Video, error) {
+	var max_watch dto_video_db.Video
 	q := `
-	SELECT MIN(watch_count) FROM public.videos 
+	SELECT id, uri, watch_count
+	FROM public.videos 
+	WHERE watch_count = (SELECT MIN(watch_count) FROM public.videos) 
 	`
 	_, err := r.client.Exec(ctx, q, &max_watch)
 	r.logger.Debugf("max err %v", err)
-	utils.CatchErr(err)
-	return max_watch
+	return max_watch, err
 }
 
 func (r db) UpdateOne(ctx context.Context, video dto_video_db.Video) error {
@@ -160,9 +156,5 @@ func (r db) UpdateOne(ctx context.Context, video dto_video_db.Video) error {
 	WHERE id = $1;
 	`
 	_, err := r.client.Exec(ctx, q, &video.ID, &video.Uri, &video.WatchCount)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }

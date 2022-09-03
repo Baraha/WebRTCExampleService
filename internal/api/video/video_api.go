@@ -32,6 +32,7 @@ func (service *restClient) Register(r *router.Router) {
 	r.POST("/stream/close/", service.CloseStream)
 	r.POST("/stream/init/", service.InitPeer)
 	r.GET("/connections/", service.GetVideo)
+	r.GET("/stream/max", service.GetMaxView)
 }
 
 func doSignaling(ctx *fasthttp.RequestCtx) {
@@ -244,6 +245,13 @@ func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, u
 
 func (service *restClient) GetVideo(ctx *fasthttp.RequestCtx) {
 	b, _ := json.Marshal(service.video_service.GetAllVideos())
+	ctx.Response.AppendBody(b)
+	ctx.Response.Header.Set("Content-Type", "application/json")
+	ctx.Response.SetStatusCode(200)
+}
+
+func (service *restClient) GetMaxView(ctx *fasthttp.RequestCtx) {
+	b, _ := json.Marshal(service.video_service.GetMaxWatched())
 	ctx.Response.AppendBody(b)
 	ctx.Response.Header.Set("Content-Type", "application/json")
 	ctx.Response.SetStatusCode(200)

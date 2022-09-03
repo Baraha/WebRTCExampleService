@@ -12,6 +12,6 @@ type LogicVideoDb interface {
 	Delete(ctx context.Context, id string) error
 	UpdateOne(ctx context.Context, video dto_video_db.Video) error
 	FindWithUri(ctx context.Context, uri string) (dto_video_db.Video, error)
-	MinWatch(ctx context.Context) int
-	MaxWatch(ctx context.Context) int
+	MinWatch(ctx context.Context) (dto_video_db.Video, error)
+	MaxWatch(ctx context.Context) (dto_video_db.Video, error)
 }

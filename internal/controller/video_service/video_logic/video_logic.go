@@ -20,6 +20,8 @@ type VideoLogicContract interface {
 	Close(id string)
 	AddTrack(uri string, keep_alive time.Duration) (videoService, string)
 	GetAllVideos() []dto_video_db.Video
+	GetMaxWatched() dto_video_db.Video
+	GetMinWatched() dto_video_db.Video
 }
 
 type videoService struct {
@@ -84,10 +86,14 @@ func (service videoService) GetAllVideos() []dto_video_db.Video {
 	return dto
 }
 
-func (service videoService) GetMaxWatched() int {
-	return 0
+func (service videoService) GetMaxWatched() dto_video_db.Video {
+	video, err := service.db_client.MaxWatch(context.TODO())
+	utils.CatchErr(err)
+	return video
 }
 
-func (service videoService) GetMaxMinWatched() int {
-	return 0
+func (service videoService) GetMinWatched() dto_video_db.Video {
+	video, err := service.db_client.MinWatch(context.TODO())
+	utils.CatchErr(err)
+	return video
 }
