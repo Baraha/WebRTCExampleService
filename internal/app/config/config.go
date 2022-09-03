@@ -1,7 +1,11 @@
 package config
 
 import (
+	"sync"
 	"time"
+	"video_service/pkg/logging"
+
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 const (
@@ -29,6 +33,45 @@ var STATE_REDIS string
 var STATUS_SUCCESS map[string]interface{} = map[string]interface{}{"status": "success"}
 
 var Mock_redis map[string]interface{}
+
+type Config struct {
+	IsDebug       bool          `yaml:"is_debug" env-required:"true"`
+	Storage       StorageConfig `yaml:"storage"`
+	Project_state string        `yaml:"project_state"`
+	Listen        struct {
+		Port string `yaml:"port" env-default:"8080"`
+	} `yaml:"listen"`
+}
+
+type StorageConfig struct {
+	Host       string `json:"host"`
+	Port       string `json:"port"`
+	Database   string `json:"database"`
+	Username   string `json:"username"`
+	Password   string `json:"password"`
+	MaxRetries int    `json:"retries"`
+}
+
+var instance *Config
+var once sync.Once
+
+func GetConfig() *Config {
+	once.Do(func() {
+		logger := logging.GetLogger()
+		logger.Info("read application configuration")
+		instance = &Config{}
+		if err := cleanenv.ReadConfig("config.yml", instance); err != nil {
+			help, _ := cleanenv.GetDescription(instance, nil)
+			logger.Info(help)
+			logger.Fatal(err)
+		}
+		logger.Debugf("MaxRetries %v", instance.Storage.MaxRetries)
+	})
+
+	instance.Storage.MaxRetries = 5
+
+	return instance
+}
 
 /* Init : init project var */
 func Init(conf_type string) {

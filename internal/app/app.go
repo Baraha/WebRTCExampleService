@@ -1,13 +1,17 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 
+	"video_service/internal/adapters/postgresql"
 	"video_service/internal/api/video"
 	"video_service/internal/app/config"
+	"video_service/internal/controller/database/video_db_logic"
 	videologic "video_service/internal/controller/video_service/video_logic"
+	"video_service/pkg/logging"
 
 	"github.com/fasthttp/router"
 	"github.com/pion/webrtc/v3"
@@ -23,7 +27,17 @@ func fileServer() {
 }
 
 func Init() {
-	rest_client := video.NewRestClient(videologic.NewVideoService())
+	cfg := config.GetConfig()
+
+	postgreSQLClient, err := postgresql.NewPostgresClient(context.TODO(), postgresql.StorageConfig(cfg.Storage))
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	db_video := video_db_logic.NewDBLogic(postgreSQLClient, logging.GetLogger())
+
+	log.Printf("postgr client %v", postgreSQLClient)
+
+	rest_client := video.NewRestClient(videologic.NewVideoService(db_video))
 
 	var media = webrtc.MediaEngine{}
 
@@ -33,7 +47,7 @@ func Init() {
 
 	rest_client.RtcApi = webrtc.NewAPI(webrtc.WithMediaEngine(&media))
 
-	config.Init(config.STATE_DEV)
+	config.Init(config.GetConfig().Project_state)
 	r := router.New()
 
 	rout = r
@@ -65,8 +79,8 @@ func CORS(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 func Start() {
 	//go fileServer()
 	video.Peer_pool = make(map[string]*webrtc.PeerConnection)
-	log.Printf("server is starting on %v!", config.SERVICE_PORT)
-	if err := fasthttp.ListenAndServe(fmt.Sprintf(":%v", config.SERVICE_PORT), CORS(rout.Handler)); err != nil {
+	log.Printf("server is starting on %v!", config.GetConfig().Listen.Port)
+	if err := fasthttp.ListenAndServe(fmt.Sprintf(":%v", config.GetConfig().Listen.Port), CORS(rout.Handler)); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)
 	}
 }

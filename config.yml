@@ -1,0 +1,13 @@
+is_debug: true
+project_state : "dev"
+storage:
+  host: localhost
+  port: 5432
+  retries: 5
+  database: dev
+  username: user
+  password: pass
+  
+
+listen:
+  port: 4200

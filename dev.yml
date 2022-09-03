@@ -2,7 +2,7 @@ version: '3'
 
 services:
     video_service:
-        container_name: iqsklad_video_service
+        container_name: video_service
         build:
             context: ./
             dockerfile: Dockerfile
@@ -16,3 +16,12 @@ services:
             options:
                 max-size: "1m"
                 max-file: "3"
+
+    postgres:
+        image: postgres:13.3
+        environment:
+            POSTGRES_DB: "dev"
+            POSTGRES_USER: "user"
+            POSTGRES_PASSWORD: "pass"
+        ports:
+            - "5432:5432"
