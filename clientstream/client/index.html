@@ -5,9 +5,14 @@
 
   <body>
     <div>
-      <label for="balloons">Video number:</label>
+      <label for="balloons">user id:</label>
       <input id="userId" type="text" name="video id" step="1s" min="0" max="10" required>
     </div>
+    <div>
+      <label for="balloons">Video URL:</label>
+      <input id="videoUrl" type="text" name="video id" step="1s" min="0" max="10" required>
+    </div>
+    
     <button onclick="window.InitSession()"> Init Session </button><br />
     <button onclick="window.addVideo()"> Add Video </button><br />
     <button onclick="window.removeVideo()"> Remove Video </button><br />
@@ -24,7 +29,7 @@
   <script>
     let activeVideos = 0
     let input = document.getElementById('userId');
-    
+    let video_input_url = document.getElementById('videoUrl');
     let pc = new RTCPeerConnection({
       iceServers: [
         {
@@ -56,7 +61,7 @@
           console.log(offer)
           //console.log(JSON.stringify(offer))
           
-          return fetch(`http://localhost:4200/stream/${method}/?id=${input.value}&audio=get`, {
+          return fetch(`http://localhost:4200/stream/${method}/?id=${input.value}&video_url=${video_input_url.value}`, {
 
             method: 'post',
             headers: {

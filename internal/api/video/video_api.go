@@ -119,6 +119,13 @@ func (service *restClient) StartStream(ctx *fasthttp.RequestCtx) {
 		ctx.Response.AppendBody(b)
 	}
 
+	video_url := string(string(ctx.QueryArgs().Peek("video_url")))
+	if user_id == "" {
+		ctx.Response.Header.Set("Content-Type", "application/json")
+		b, _ := json.Marshal(map[string]interface{}{"Error": "invalid video_url"})
+		ctx.Response.AppendBody(b)
+	}
+
 	if _, exists := Peer_pool[user_id]; !exists {
 		ctx.Response.Header.Set("Content-Type", "application/json")
 		b, _ := json.Marshal(map[string]interface{}{"Error": "user is nil"})
@@ -159,12 +166,18 @@ func (service *restClient) StartStream(ctx *fasthttp.RequestCtx) {
 		}
 	}()
 
-	go service.writeVideoToTrack(videoTrack, user_id)
+	go service.writeVideoToTrack(videoTrack, user_id, video_url)
 	doSignaling(ctx)
 }
 func (service *restClient) CloseStream(ctx *fasthttp.RequestCtx) {
 
 	user_id := string(string(ctx.QueryArgs().Peek("id")))
+	if user_id == "" {
+		ctx.Response.Header.Set("Content-Type", "application/json")
+		b, _ := json.Marshal(map[string]interface{}{"Error": "invalid user"})
+		ctx.Response.AppendBody(b)
+	}
+
 	if user_id == "" {
 		ctx.Response.Header.Set("Content-Type", "application/json")
 		b, _ := json.Marshal(map[string]interface{}{"Error": "invalid user"})
@@ -196,7 +209,7 @@ func (service *restClient) CloseStream(ctx *fasthttp.RequestCtx) {
 	log.Print("return in close_stream")
 }
 
-func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, user_id string) {
+func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, user_id string, video_url string) {
 	var err error
 
 	if err != nil {
@@ -204,7 +217,7 @@ func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, u
 	}
 
 	// Производим подключение к камере -  на dev среде стоит обработка из файла
-	new_service, video_id := service.video_service.AddTrack(fmt.Sprintf("rtsp://admin:Windowsmac13@192.168.1.64:554/ISAPI/Streaming/Channels/%v", user_id), 10*time.Second)
+	new_service, video_id := service.video_service.AddTrack(video_url, 10*time.Second)
 
 	for {
 		// Проверяем что peer все еше присутствует

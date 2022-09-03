@@ -32,6 +32,8 @@ func NewVideoService(db db_contracts.LogicVideoDb) videoService {
 }
 
 func (service videoService) AddTrack(uri string, keep_alive time.Duration) (videoService, string) {
+	var video_id string
+
 	switch config.VideoService {
 	case config.STATE_PROD:
 		service.video_client = cameras.NewCamService(uri, keep_alive)
@@ -40,13 +42,24 @@ func (service videoService) AddTrack(uri string, keep_alive time.Duration) (vide
 		service.video_client = fileservice.NewFileService()
 		log.Printf("service is %v", service.video_client)
 	}
-	new_id := uuid.NewString()
-	service.db_client.Create(context.TODO(), &dto_video_db.Video{
-		Uri: uri,
-		ID:  new_id,
-	})
+	video, err := service.db_client.FindWithUri(context.TODO(), uri)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			log.Printf("error in findOne %v", err)
+			video_id = uuid.NewString()
+			service.db_client.Create(context.TODO(), &dto_video_db.Video{
+				Uri:        uri,
+				ID:         video_id,
+				WatchCount: 1,
+			})
+		}
+	} else {
+		video_id = video.ID
+		video.WatchCount++
+		service.db_client.UpdateOne(context.Background(), video)
+	}
 
-	return service, new_id
+	return service, video_id
 }
 
 func (service videoService) Read() ([]byte, time.Duration) {
@@ -54,7 +67,14 @@ func (service videoService) Read() ([]byte, time.Duration) {
 }
 
 func (service videoService) Close(id string) {
-	service.db_client.Delete(context.TODO(), id)
+	log.Printf("id is %v", id)
+	video, _ := service.db_client.FindOne(context.TODO(), id)
+	if video.WatchCount <= 1 {
+		service.db_client.Delete(context.TODO(), id)
+		return
+	}
+	video.WatchCount--
+	utils.CatchErr(service.db_client.UpdateOne(context.Background(), video))
 	service.video_client.Close()
 }
 
@@ -62,4 +82,12 @@ func (service videoService) GetAllVideos() []dto_video_db.Video {
 	dto, err := service.db_client.FindAll(context.TODO())
 	utils.CatchErr(err)
 	return dto
+}
+
+func (service videoService) GetMaxWatched() int {
+	return 0
+}
+
+func (service videoService) GetMaxMinWatched() int {
+	return 0
 }

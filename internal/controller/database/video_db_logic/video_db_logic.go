@@ -32,15 +32,15 @@ func formatQuery(q string) string {
 func (r db) Create(ctx context.Context, video *dto_video_db.Video) error {
 	q := `
 		INSERT INTO videos 
-		    (uri, id) 
+		    (uri, id, watch_count) 
 		VALUES 
-		       ($1, $2) 
+		       ($1, $2, $3) 
 		RETURNING id
 	`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 	c := r.client
 	r.logger.Debugf("test client %v", c)
-	row := r.client.QueryRow(ctx, q, video.Uri, video.ID)
+	row := r.client.QueryRow(ctx, q, video.Uri, video.ID, video.WatchCount)
 	r.logger.Debug("start SCAN")
 	if err := row.Scan(&video.ID); err != nil {
 		var pgErr *pgconn.PgError
@@ -58,7 +58,8 @@ func (r db) Create(ctx context.Context, video *dto_video_db.Video) error {
 
 func (r db) FindAll(ctx context.Context) (u []dto_video_db.Video, err error) {
 	q := `
-		SELECT id, uri FROM public.videos;
+		SELECT id, uri, watch_count
+		 FROM public.videos;
 	`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 
@@ -72,7 +73,7 @@ func (r db) FindAll(ctx context.Context) (u []dto_video_db.Video, err error) {
 	for rows.Next() {
 		var v dto_video_db.Video
 
-		err = rows.Scan(&v.ID, &v.Uri)
+		err = rows.Scan(&v.ID, &v.Uri, &v.WatchCount)
 		if err != nil {
 			return nil, err
 		}
@@ -89,13 +90,29 @@ func (r db) FindAll(ctx context.Context) (u []dto_video_db.Video, err error) {
 
 func (r db) FindOne(ctx context.Context, id string) (dto_video_db.Video, error) {
 	q := `
-		SELECT id, uri FROM public.videos WHERE id = $1
+		SELECT id, uri, watch_count FROM public.videos WHERE id = $1
 	`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 
 	var ath dto_video_db.Video
 	row := r.client.QueryRow(ctx, q, id)
-	err := row.Scan(&ath.ID, &ath.Uri)
+	err := row.Scan(&ath.ID, &ath.Uri, &ath.WatchCount)
+	if err != nil {
+		return dto_video_db.Video{}, err
+	}
+
+	return ath, nil
+}
+
+func (r db) FindWithUri(ctx context.Context, uri string) (dto_video_db.Video, error) {
+	q := `
+		SELECT id, uri, watch_count FROM public.videos WHERE uri = $1
+	`
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
+
+	var ath dto_video_db.Video
+	row := r.client.QueryRow(ctx, q, uri)
+	err := row.Scan(&ath.ID, &ath.Uri, &ath.WatchCount)
 	if err != nil {
 		return dto_video_db.Video{}, err
 	}
@@ -111,4 +128,41 @@ func (r db) Delete(ctx context.Context, id string) error {
 	utils.CatchErr(err)
 	r.logger.Debugf("delete err %v", err)
 	return err
+}
+
+func (r db) MaxWatch(ctx context.Context) int {
+	var max_watch int
+	q := `
+	SELECT MAX(watch_count) FROM public.videos 
+	`
+	_, err := r.client.Exec(ctx, q, &max_watch)
+	r.logger.Debugf("max err %v", err)
+	utils.CatchErr(err)
+	return max_watch
+}
+
+func (r db) MinWatch(ctx context.Context) int {
+	var max_watch int
+	q := `
+	SELECT MIN(watch_count) FROM public.videos 
+	`
+	_, err := r.client.Exec(ctx, q, &max_watch)
+	r.logger.Debugf("max err %v", err)
+	utils.CatchErr(err)
+	return max_watch
+}
+
+func (r db) UpdateOne(ctx context.Context, video dto_video_db.Video) error {
+	q := `UPDATE public.videos 
+	SET 
+	uri = $2,
+	watch_count = $3
+	WHERE id = $1;
+	`
+	_, err := r.client.Exec(ctx, q, &video.ID, &video.Uri, &video.WatchCount)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
