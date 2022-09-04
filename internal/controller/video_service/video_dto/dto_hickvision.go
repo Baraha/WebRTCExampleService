@@ -1,6 +1,6 @@
-package dtohickvision
+package dtocam
 
-type DTOHickVision struct {
+type DTOCam struct {
 	Uri                 string
 	RTPKeppAliveSeconds int
 }
