@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"video_service/internal/adapters/postgresql"
-	"video_service/internal/controller/database/dto_video_db"
+	"video_service/internal/controller/database/video/video_db_dto"
 	"video_service/pkg/logging"
 	"video_service/pkg/utils"
 
@@ -29,7 +29,7 @@ func formatQuery(q string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(q, "\t", ""), "\n", " ")
 }
 
-func (r db) Create(ctx context.Context, video *dto_video_db.Video) error {
+func (r db) Create(ctx context.Context, video *video_db_dto.Video) error {
 	q := `
 		INSERT INTO videos 
 		    (uri, id, watch_count) 
@@ -56,7 +56,7 @@ func (r db) Create(ctx context.Context, video *dto_video_db.Video) error {
 	return nil
 }
 
-func (r db) FindAll(ctx context.Context) (u []dto_video_db.Video, err error) {
+func (r db) FindAll(ctx context.Context) (u []video_db_dto.Video, err error) {
 	q := `
 		SELECT id, uri, watch_count
 		 FROM public.videos;
@@ -68,10 +68,10 @@ func (r db) FindAll(ctx context.Context) (u []dto_video_db.Video, err error) {
 		return nil, err
 	}
 
-	authors := make([]dto_video_db.Video, 0)
+	authors := make([]video_db_dto.Video, 0)
 
 	for rows.Next() {
-		var v dto_video_db.Video
+		var v video_db_dto.Video
 
 		err = rows.Scan(&v.ID, &v.Uri, &v.WatchCount)
 		if err != nil {
@@ -88,25 +88,25 @@ func (r db) FindAll(ctx context.Context) (u []dto_video_db.Video, err error) {
 	return authors, nil
 }
 
-func (r db) FindOne(ctx context.Context, id string) (dto_video_db.Video, error) {
+func (r db) FindOne(ctx context.Context, id string) (video_db_dto.Video, error) {
 	q := `
 		SELECT id, uri, watch_count FROM public.videos WHERE id = $1
 	`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 
-	var ath dto_video_db.Video
+	var ath video_db_dto.Video
 	row := r.client.QueryRow(ctx, q, id)
 	err := row.Scan(&ath.ID, &ath.Uri, &ath.WatchCount)
 	return ath, err
 }
 
-func (r db) FindWithUri(ctx context.Context, uri string) (dto_video_db.Video, error) {
+func (r db) FindWithUri(ctx context.Context, uri string) (video_db_dto.Video, error) {
 	q := `
 		SELECT id, uri, watch_count FROM public.videos WHERE uri = $1
 	`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 
-	var ath dto_video_db.Video
+	var ath video_db_dto.Video
 	row := r.client.QueryRow(ctx, q, uri)
 	err := row.Scan(&ath.ID, &ath.Uri, &ath.WatchCount)
 	return ath, err
@@ -122,8 +122,8 @@ func (r db) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-func (r db) MaxWatch(ctx context.Context) (dto_video_db.Video, error) {
-	var max_watch dto_video_db.Video
+func (r db) MaxWatch(ctx context.Context) (video_db_dto.Video, error) {
+	var max_watch video_db_dto.Video
 	q := `
 	SELECT id, uri, watch_count
 	FROM public.videos 
@@ -136,8 +136,8 @@ func (r db) MaxWatch(ctx context.Context) (dto_video_db.Video, error) {
 	return max_watch, err
 }
 
-func (r db) MinWatch(ctx context.Context) (dto_video_db.Video, error) {
-	var min_watch dto_video_db.Video
+func (r db) MinWatch(ctx context.Context) (video_db_dto.Video, error) {
+	var min_watch video_db_dto.Video
 	q := `
 	SELECT id, uri, watch_count
 	FROM public.videos 
@@ -149,7 +149,7 @@ func (r db) MinWatch(ctx context.Context) (dto_video_db.Video, error) {
 	return min_watch, err
 }
 
-func (r db) UpdateOne(ctx context.Context, video dto_video_db.Video) error {
+func (r db) UpdateOne(ctx context.Context, video video_db_dto.Video) error {
 	q := `UPDATE public.videos 
 	SET 
 	uri = $2,

@@ -2,16 +2,16 @@ package db_contracts
 
 import (
 	"context"
-	"video_service/internal/controller/database/dto_video_db"
+	"video_service/internal/controller/database/video/video_db_dto"
 )
 
 type LogicVideoDb interface {
-	FindOne(ctx context.Context, id string) (dto_video_db.Video, error)
-	FindAll(ctx context.Context) (u []dto_video_db.Video, err error)
-	Create(ctx context.Context, video *dto_video_db.Video) error
+	FindOne(ctx context.Context, id string) (video_db_dto.Video, error)
+	FindAll(ctx context.Context) (u []video_db_dto.Video, err error)
+	Create(ctx context.Context, video *video_db_dto.Video) error
 	Delete(ctx context.Context, id string) error
-	UpdateOne(ctx context.Context, video dto_video_db.Video) error
-	FindWithUri(ctx context.Context, uri string) (dto_video_db.Video, error)
-	MinWatch(ctx context.Context) (dto_video_db.Video, error)
-	MaxWatch(ctx context.Context) (dto_video_db.Video, error)
+	UpdateOne(ctx context.Context, video video_db_dto.Video) error
+	FindWithUri(ctx context.Context, uri string) (video_db_dto.Video, error)
+	MinWatch(ctx context.Context) (video_db_dto.Video, error)
+	MaxWatch(ctx context.Context) (video_db_dto.Video, error)
 }

@@ -8,7 +8,7 @@ import (
 	fileservice "video_service/internal/adapters/file_service"
 	"video_service/internal/app/config"
 	"video_service/internal/controller/database/db_contracts"
-	"video_service/internal/controller/database/dto_video_db"
+	"video_service/internal/controller/database/video/video_db_dto"
 	videocontracts "video_service/internal/controller/video_service/video_contracts"
 	"video_service/pkg/utils"
 
@@ -19,9 +19,9 @@ type VideoLogicContract interface {
 	Read() ([]byte, time.Duration)
 	Close(id string)
 	AddTrack(uri string, keep_alive time.Duration) (videoService, string, error)
-	GetAllVideos() []dto_video_db.Video
-	GetMaxWatched() dto_video_db.Video
-	GetMinWatched() dto_video_db.Video
+	GetAllVideos() []video_db_dto.Video
+	GetMaxWatched() video_db_dto.Video
+	GetMinWatched() video_db_dto.Video
 }
 
 type videoService struct {
@@ -58,7 +58,7 @@ func (service videoService) AddTrack(uri string, keep_alive time.Duration) (vide
 		if err.Error() == "no rows in result set" {
 			log.Printf("error in findOne %v", err)
 			video_id = uuid.NewString()
-			service.db_client.Create(context.TODO(), &dto_video_db.Video{
+			service.db_client.Create(context.TODO(), &video_db_dto.Video{
 				Uri:        uri,
 				ID:         video_id,
 				WatchCount: 1,
@@ -92,19 +92,19 @@ func (service videoService) Close(id string) {
 	service.video_client.Close()
 }
 
-func (service videoService) GetAllVideos() []dto_video_db.Video {
+func (service videoService) GetAllVideos() []video_db_dto.Video {
 	dto, err := service.db_client.FindAll(context.TODO())
 	utils.CatchErr(err)
 	return dto
 }
 
-func (service videoService) GetMaxWatched() dto_video_db.Video {
+func (service videoService) GetMaxWatched() video_db_dto.Video {
 	video, err := service.db_client.MaxWatch(context.TODO())
 	utils.CatchErr(err)
 	return video
 }
 
-func (service videoService) GetMinWatched() dto_video_db.Video {
+func (service videoService) GetMinWatched() video_db_dto.Video {
 	video, err := service.db_client.MinWatch(context.TODO())
 	utils.CatchErr(err)
 	return video
