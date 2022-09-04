@@ -2,7 +2,7 @@ package db_contracts
 
 import (
 	"context"
-	"video_service/internal/controller/database/video/video_db_dto"
+	"video_service/internal/controllers/database/video/video_db_dto"
 )
 
 type LogicVideoDb interface {

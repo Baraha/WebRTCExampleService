@@ -8,8 +8,8 @@ import (
 
 	"video_service/internal/adapters/postgresql"
 	"video_service/internal/app/config"
-	"video_service/internal/controller/api/video"
-	"video_service/internal/controller/database/video/video_db_logic"
+	"video_service/internal/controllers/api/video"
+	"video_service/internal/controllers/database/video/video_db_logic"
 	videologic "video_service/internal/domain/video_service/video_logic"
 	"video_service/pkg/logging"
 	"video_service/pkg/utils"

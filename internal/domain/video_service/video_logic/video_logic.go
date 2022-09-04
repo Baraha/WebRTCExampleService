@@ -7,8 +7,8 @@ import (
 	"video_service/internal/adapters/cameras"
 	fileservice "video_service/internal/adapters/file_service"
 	"video_service/internal/app/config"
-	"video_service/internal/controller/database/db_contracts"
-	"video_service/internal/controller/database/video/video_db_dto"
+	"video_service/internal/controllers/database/db_contracts"
+	"video_service/internal/controllers/database/video/video_db_dto"
 	videocontracts "video_service/internal/domain/video_service/video_contracts"
 	"video_service/pkg/utils"
 

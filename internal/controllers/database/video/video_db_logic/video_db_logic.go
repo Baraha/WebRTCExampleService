@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"video_service/internal/adapters/postgresql"
-	"video_service/internal/controller/database/video/video_db_dto"
+	"video_service/internal/controllers/database/video/video_db_dto"
 	"video_service/pkg/logging"
 	"video_service/pkg/utils"
 
