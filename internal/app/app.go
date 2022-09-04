@@ -58,7 +58,7 @@ func Init() {
 	rout = r
 
 	//______________________________________________________________________
-	// register all rest api EndPoints
+	// register all rest api EndPoint
 	rest_video.Register(r)
 	//----------------------------------------------------------------------
 
@@ -86,7 +86,7 @@ func CORS(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	}
 }
 
-func App() {
+func Start() {
 	video.Peer_pool = make(map[string]*webrtc.PeerConnection)
 	log.Printf("server is starting on %v!", config.GetConfig().Listen.Port)
 	if err := fasthttp.ListenAndServe(fmt.Sprintf(":%v", config.GetConfig().Listen.Port), CORS(rout.Handler)); err != nil {
