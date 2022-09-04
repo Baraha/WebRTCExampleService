@@ -5,7 +5,7 @@ import (
 	"io"
 	"log"
 	"time"
-	"video_service/internal/controller/video_service/video_logic"
+	"video_service/internal/domain/video_service/video_logic"
 	"video_service/pkg/utils"
 
 	"github.com/fasthttp/router"
@@ -218,17 +218,17 @@ func (service *restClient) CloseStream(ctx *fasthttp.RequestCtx) {
 
 func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, user_id string, video_url string, new_service video_logic.VideoLogicContract, video_id string) {
 
-	// Производим подключение к камере -  на dev среде стоит обработка из файла
+	// connect to cam -  on dev -> open and stream file on server
 
 	for {
-		// Проверяем что peer все еше присутствует
+
 		if _, exists := Peer_pool[user_id]; exists {
 			if Peer_pool[user_id].ConnectionState().String() == "closed" {
 				Peer_pool[user_id] = nil
 				break
 			}
 		}
-		// читаем фрейм
+
 		data, pkt_time := new_service.Read()
 		time.Sleep(pkt_time)
 		if data == nil {
