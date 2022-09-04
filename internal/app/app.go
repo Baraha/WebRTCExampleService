@@ -27,16 +27,21 @@ func fileServer() {
 }
 
 func Init() {
+
+	// Get config in config.yml file
 	cfg := config.GetConfig()
 
 	postgreSQLClient, err := postgresql.NewPostgresClient(context.TODO(), postgresql.StorageConfig(cfg.Storage))
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
+
+	// create logic video -> video for logic cases (domain layer)
 	db_video := video_db_logic.NewDBLogic(postgreSQLClient, logging.GetLogger())
 
 	log.Printf("postgr client %v", postgreSQLClient)
 
+	// create rest client -> video rest cases (app layer)
 	rest_client := video.NewRestClient(videologic.NewVideoService(db_video))
 
 	var media = webrtc.MediaEngine{}
@@ -47,6 +52,7 @@ func Init() {
 
 	rest_client.RtcApi = webrtc.NewAPI(webrtc.WithMediaEngine(&media))
 
+	// init config data for init with other system
 	config.Init(config.GetConfig().Project_state)
 	r := router.New()
 
@@ -77,7 +83,6 @@ func CORS(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 }
 
 func Start() {
-	//go fileServer()
 	video.Peer_pool = make(map[string]*webrtc.PeerConnection)
 	log.Printf("server is starting on %v!", config.GetConfig().Listen.Port)
 	if err := fasthttp.ListenAndServe(fmt.Sprintf(":%v", config.GetConfig().Listen.Port), CORS(rout.Handler)); err != nil {
