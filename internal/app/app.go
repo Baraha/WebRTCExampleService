@@ -12,6 +12,7 @@ import (
 	"video_service/internal/controller/database/video/video_db_logic"
 	videologic "video_service/internal/controller/video_service/video_logic"
 	"video_service/pkg/logging"
+	"video_service/pkg/utils"
 
 	"github.com/fasthttp/router"
 	"github.com/pion/webrtc/v3"
@@ -30,19 +31,21 @@ func Init() {
 
 	// Get config in config.yml file
 	cfg := config.GetConfig()
+	// init config data for init with other system
+	config.Init(config.GetConfig().Project_state)
 
 	postgreSQLClient, err := postgresql.NewPostgresClient(context.TODO(), postgresql.StorageConfig(cfg.Storage))
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
+	utils.CatchErr(err)
 
-	// create logic video -> video for logic cases (domain layer)
+	// create logic db video -> (domain layer)
 	db_video := video_db_logic.NewDBLogic(postgreSQLClient, logging.GetLogger())
 
+	// create logic video -> video for logic cases (domain layer)
+	video_domain := videologic.NewVideoService(db_video)
 	log.Printf("postgr client %v", postgreSQLClient)
 
 	// create rest client -> video rest cases (app layer)
-	rest_client := video.NewRestClient(videologic.NewVideoService(db_video))
+	rest_video := video.NewRestClient(video_domain)
 
 	var media = webrtc.MediaEngine{}
 
@@ -50,14 +53,15 @@ func Init() {
 		panic(err)
 	}
 
-	rest_client.RtcApi = webrtc.NewAPI(webrtc.WithMediaEngine(&media))
-
-	// init config data for init with other system
-	config.Init(config.GetConfig().Project_state)
+	rest_video.RtcApi = webrtc.NewAPI(webrtc.WithMediaEngine(&media))
 	r := router.New()
-
 	rout = r
-	rest_client.Register(r)
+
+	//______________________________________________________________________
+	// register all rest api EndPoints
+	rest_video.Register(r)
+	//----------------------------------------------------------------------
+
 }
 
 var (
@@ -82,10 +86,11 @@ func CORS(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	}
 }
 
-func Start() {
+func App() {
 	video.Peer_pool = make(map[string]*webrtc.PeerConnection)
 	log.Printf("server is starting on %v!", config.GetConfig().Listen.Port)
 	if err := fasthttp.ListenAndServe(fmt.Sprintf(":%v", config.GetConfig().Listen.Port), CORS(rout.Handler)); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)
 	}
+
 }
