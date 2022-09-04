@@ -18,7 +18,7 @@ import (
 type VideoLogicContract interface {
 	Read() ([]byte, time.Duration)
 	Close(id string)
-	AddTrack(uri string, keep_alive time.Duration) (videoService, string)
+	AddTrack(uri string, keep_alive time.Duration) (videoService, string, error)
 	GetAllVideos() []dto_video_db.Video
 	GetMaxWatched() dto_video_db.Video
 	GetMinWatched() dto_video_db.Video
@@ -33,16 +33,25 @@ func NewVideoService(db db_contracts.LogicVideoDb) videoService {
 	return videoService{db_client: db}
 }
 
-func (service videoService) AddTrack(uri string, keep_alive time.Duration) (videoService, string) {
+func (service videoService) AddTrack(uri string, keep_alive time.Duration) (videoService, string, error) {
 	var video_id string
+	var err error
 
 	switch config.VideoService {
 	case config.STATE_PROD:
-		service.video_client = cameras.NewCamService(uri, keep_alive)
+		service.video_client, err = cameras.NewCamService(uri, keep_alive)
+		if err != nil {
+			return service, video_id, err
+		}
+
 	case config.STATE_DEV:
 		log.Printf("state dev")
-		service.video_client = fileservice.NewFileService()
+		service.video_client, err = fileservice.NewFileService(uri)
 		log.Printf("service is %v", service.video_client)
+		if err != nil {
+			return service, video_id, err
+		}
+
 	}
 	video, err := service.db_client.FindWithUri(context.TODO(), uri)
 	if err != nil {
@@ -54,6 +63,8 @@ func (service videoService) AddTrack(uri string, keep_alive time.Duration) (vide
 				ID:         video_id,
 				WatchCount: 1,
 			})
+		} else {
+			return service, video_id, err
 		}
 
 	} else {
@@ -62,7 +73,7 @@ func (service videoService) AddTrack(uri string, keep_alive time.Duration) (vide
 		service.db_client.UpdateOne(context.Background(), video)
 	}
 
-	return service, video_id
+	return service, video_id, nil
 }
 
 func (service videoService) Read() ([]byte, time.Duration) {

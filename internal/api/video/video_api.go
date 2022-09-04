@@ -165,8 +165,15 @@ func (service *restClient) StartStream(ctx *fasthttp.RequestCtx) {
 
 		}
 	}()
-
-	go service.writeVideoToTrack(videoTrack, user_id, video_url)
+	new_service, video_id, err := service.video_service.AddTrack(video_url, 10*time.Second)
+	if err != nil {
+		ctx.Response.Header.Set("Content-Type", "application/json")
+		b, _ := json.Marshal(map[string]interface{}{"Error": err.Error()})
+		ctx.Response.SetStatusCode(400)
+		ctx.Response.AppendBody(b)
+		return
+	}
+	go service.writeVideoToTrack(videoTrack, user_id, video_url, new_service, video_id)
 	doSignaling(ctx)
 }
 func (service *restClient) CloseStream(ctx *fasthttp.RequestCtx) {
@@ -209,15 +216,9 @@ func (service *restClient) CloseStream(ctx *fasthttp.RequestCtx) {
 	log.Print("return in close_stream")
 }
 
-func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, user_id string, video_url string) {
-	var err error
-
-	if err != nil {
-		panic(err)
-	}
+func (service *restClient) writeVideoToTrack(t *webrtc.TrackLocalStaticSample, user_id string, video_url string, new_service video_logic.VideoLogicContract, video_id string) {
 
 	// Производим подключение к камере -  на dev среде стоит обработка из файла
-	new_service, video_id := service.video_service.AddTrack(video_url, 10*time.Second)
 
 	for {
 		// Проверяем что peer все еше присутствует

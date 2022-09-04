@@ -1,6 +1,7 @@
 package fileservice
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -16,12 +17,17 @@ type H264fileService struct {
 	h264Reader *h264reader.H264Reader
 }
 
-func NewFileService() H264fileService {
-	file, h264Err := os.Open("./videos/output.h264")
-	utils.CatchErr(h264Err)
+func NewFileService(file_name string) (H264fileService, error) {
+	file, h264Err := os.Open(fmt.Sprintf("./videos/%v.h264", file_name))
+	if h264Err != nil {
+		return H264fileService{}, h264Err
+	}
+
 	reader, h264Err := h264reader.NewReader(file)
-	utils.CatchErr(h264Err)
-	return H264fileService{file: file, h264Reader: reader}
+	if h264Err != nil {
+		return H264fileService{}, h264Err
+	}
+	return H264fileService{file: file, h264Reader: reader}, nil
 }
 
 func (service H264fileService) ReadPacket() ([]byte, time.Duration) {

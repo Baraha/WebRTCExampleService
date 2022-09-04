@@ -1,4 +1,5 @@
 version: '3'
+# Not working on mac
 
 services:
     video_service:
@@ -11,11 +12,6 @@ services:
 
         restart: always
         network_mode: "host"
-        logging:
-            driver: "json-file"
-            options:
-                max-size: "1m"
-                max-file: "3"
 
     postgres:
         image: postgres:13.3
@@ -27,7 +23,7 @@ services:
             - "5432:5432"
 
     test_front:
-        container_name: test_frot
+        container_name: test_front
         build:
             context: ./clientstream
             dockerfile: Dockerfile

@@ -17,12 +17,18 @@ type camService struct {
 }
 
 // rtsp://admin:Windowsmac13@192.168.1.64:554/ISAPI/Streaming/Channels/0"
-func NewCamService(uri string, keppAlive time.Duration) camService {
+func NewCamService(uri string, keppAlive time.Duration) (camService, error) {
 	session, err := rtsp.Dial(uri)
-	utils.CatchErr(err)
+	if err != nil {
+		return camService{}, err
+	}
+
 	codecs, err := session.Streams()
-	utils.CatchErr(err)
-	return camService{session: session, RtpKeepAliveTimeout: keppAlive, codecs: codecs}
+	if err != nil {
+		return camService{}, err
+	}
+
+	return camService{session: session, RtpKeepAliveTimeout: keppAlive, codecs: codecs}, nil
 }
 
 func (service camService) ReadPacket() ([]byte, time.Duration) {

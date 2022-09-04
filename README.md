@@ -16,3 +16,5 @@
 Комманда для кодировки в h264 вашего файла: 
 
 ffmpeg -i $INPUT_FILE -an -c:v libx264 -bsf:v h264_mp4toannexb -b:v 2M -max_delay 0 -bf 0 output.h264
+
+Сервис не работет на mac из-за нерабочего network_mod : host -> https://github.com/docker/compose/issues/3800
